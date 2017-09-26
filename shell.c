@@ -37,7 +37,7 @@ void loop(char *prompt)
 int main(int argc, char** argv) 
 {
   char *prompt = "308sh";
-  char *usage = "Usage: program -p <prompt>\n";
+  char *usage = "Usage: ./shell -p <prompt>\n";
 
   if(argc == 3) {
     

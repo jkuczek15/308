@@ -12,6 +12,5 @@ int set(char **args);
 int pid();
 int ppid();
 int sh_exit(char **args);
-void loop (); 
 
 #endif
