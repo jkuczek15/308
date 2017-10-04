@@ -1,6 +1,6 @@
 #ifndef APPSERVER
 #define APPSERVER
 
-void loop();
+void bank_loop();
 
 #endif

@@ -1,54 +1,62 @@
 #include "utils.h"
 
 /*
-   Replace a substring with another string
+ * Compare two strings, case insensitive
 */
-char *str_replace(char *orig, char *rep, char *with) 
+int strcicmp(char const *a, char const *b)
 {
-    char *result;  // the return string
-    char *ins;     // the next insert point
-    char *tmp;     // varies
-    int len_rep;   // length of rep (the string to remove)
-    int len_with;  // length of with (the string to replace rep with)
-    int len_front; // distance between rep and end of last rep
-    int count;     // number of replacements
+    for (;; a++, b++) {
+        int d = tolower(*a) - tolower(*b);
+        if (d != 0 || !*a)
+            return d;
+    }// end for loop comparing each character of the string
+}// end case insensitive string compare
 
-    // sanity checks and initialization
-    if (!orig || !rep)
-        return NULL;
-    len_rep = strlen(rep);
-    if (len_rep == 0)
-        return NULL; // empty rep causes infinite loop during count
-    if (!with)
-        with = "";
-    len_with = strlen(with);
+/*
+* Get the number of arguments for a particular string, creates a copy of the string
+*/
+int num_arguments(char *linep)
+{
 
-    // count the number of replacements needed
-    ins = orig;
-    for (count = 0; (tmp = strstr(ins, rep)); ++count) {
-        ins = tmp + len_rep;
-    }
+  char *line = malloc (1 + strlen(linep));
+  
+  if (line){
+    strcpy (line, linep);
+  }else{
+    fprintf (stderr, "malloc failure!");
+  }// end if creating a copy for grabbing number of arguments
 
-    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+  int bufsize = TOK_BUFSIZE, position = 0;
+  char **tokens = malloc(bufsize * sizeof(char*));
+  char *token;
 
-    if (!result)
-        return NULL;
+  if (!tokens) {
+    fprintf(stderr, "shell: Allocation error\n");
+    exit(EXIT_FAILURE);
+  }// end if tokens not allocated 
 
-    // first time through the loop, all the variable are set correctly
-    // from here on,
-    // tmp points to the end of the result string
-    // ins points to the next occurrence of rep in orig
-    // orig points to the remainder of orig after "end of rep"
-    while (count--) {
-        ins = strstr(orig, rep);
-        len_front = ins - orig;
-        tmp = strncpy(tmp, orig, len_front) + len_front;
-        tmp = strcpy(tmp, with) + len_with;
-        orig += len_front + len_rep; // move to next "end of rep"
-    }
-    strcpy(tmp, orig);
-    return result;
-}// end function str_replace()
+  token = strtok(line, TOK_DELIM);
+  
+  while (token != NULL) {
+    tokens[position] = token;
+    position++;
+
+    if (position >= bufsize) {
+      bufsize += TOK_BUFSIZE;
+      tokens = realloc(tokens, bufsize * sizeof(char*));
+      
+      if (!tokens) {
+        fprintf(stderr, "shell: Allocation error\n");
+        exit(EXIT_FAILURE);
+      }// end if !tokens
+
+    }// end if position >= bufsize
+
+    token = strtok(NULL, TOK_DELIM);
+  }// end while token is not null
+
+  return position;
+}// end function split_line
 
 /*
   Split the line from standard input (get arguments)
