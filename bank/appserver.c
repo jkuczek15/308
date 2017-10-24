@@ -8,10 +8,17 @@
 #include "queue.h"
 #include "appserver.h"
 
-// Main linked list data structure for holding requests
+// main linked list data structure for holding requests
 // to be serviced by the worker threads
 struct Queue* requests;
+
+// number of total bank accounts
 int num_accounts;
+
+// lock for our queue
+pthread_mutex_t queue_lock;
+
+// store a lock for each bank account
 pthread_mutex_t *locks;
 
 /*************************************
@@ -89,15 +96,34 @@ void *worker_loop(void *args)
   while(1)
   {
     // while loop servicing requests from main I/O thread
+    // first lock the queue before we do any operations on it 
+    pthread_mutex_lock(&queue_lock);
+
     if(!isEmpty(requests)){
       // we have a request we can service
       request = dequeue(requests);
-      transaction(request->accountID, request->value, num_accounts);
-    }// end if the queue is not empty, service a request   
+
+      // now we can unlock the queue
+      pthread_mutex_unlock(&queue_lock);
+      
+      if(request->accountID != 0){
+	 // lock the mutex, make the transaction, unlock the mutex
+	 pthread_mutex_lock(&locks[request->accountID-1]);
+	 //printf("Account ID: %d, Value: %d\n", request->accountID, request->value);
+         transaction(request->accountID, request->value, num_accounts);
+         pthread_mutex_unlock(&locks[request->accountID-1]);
+      }// end if we have a nonzero account ID
+
+     }else{
+       // queue is empty, just unlock it for another thread
+       pthread_mutex_unlock(&queue_lock);
+     }// end if the queue is not empty, service a request   
 
   }// end while loop for worker thread servicing requests
-
-  free(request);
+  
+  if(request){
+    free(request);
+  }// end if there was recently a request, free it
 }// end function worker_loop()
 
 /*************************************
@@ -111,24 +137,31 @@ int main(int argc, char** argv)
   int num_worker_threads, i;
   pthread_t thread;
 	
-  if(argc == 4) {
-    
+  if(argc == 4) {   
 	num_worker_threads = atoi(argv[1]);
 	num_accounts = atoi(argv[2]);
- 	if(num_worker_threads == 0 || num_accounts == 0){
+ 	
+	if(num_worker_threads == 0 || num_accounts == 0){
 		printf("Error parsing number of worker threads/number of accounts. Enter nonzero integers for both values.\n");
 		return 0;
 	}// end if num_worker_threads == 0 or num_accounts == 0 	
 	
 	// initialize the accounts to have balance of 0
 	initialize_accounts(num_accounts);
-	
+  	
+	// allocate space for storing our mutexes	
+	locks = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t) * num_accounts);
+
+	// initialize a lock for the queue 	
+	pthread_mutex_init(&queue_lock, NULL);
+
 	for(i = 0; i < num_accounts; i++){
-	  pthread_mutex_t mutex;
-	  //locks[i] = mutex;
-	  //pthread_mutex_init(&locks[i], NULL);
+	  // initialize a new mutex for each account
+	  pthread_mutex_t mutex;	 
+	  pthread_mutex_init(&mutex, NULL);
+	  locks[i] = mutex;
 	}// end for loop over number of accounts
-        
+
 	// create a new queue for handling requests
         requests = createQueue(1000);
 
