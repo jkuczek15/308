@@ -108,3 +108,26 @@ char *read_line(void)
   return line;
 }// end function read_line
 
+/*
+  Determine if all the threads are done running
+*/
+int all_threads_done(int *threads_done, int num_threads)
+{
+  int i;
+  
+  for(i = 0; i < num_threads; i++){     
+     if(threads_done[i] == 0){
+	return 0;;
+     }// end if one of the threads isn't done	
+  }// end for loop over all the threads
+  return 1;
+}// end function all_threads_done
+
+/*
+  Loop waiting for worker threads to finish
+*/
+void wait_for_workers(int *threads_done, int num_worker_threads)
+{
+  while(!all_threads_done(threads_done, num_worker_threads)){ /* wait until all threads are done */ }
+}// end function wait_for_workers
+

@@ -17,9 +17,10 @@ struct Queue* createQueue(unsigned capacity)
 }
 
 // function to create a new request to be serviced by worker thread
-struct Request* createRequest(int accountID, int value, int write)
+struct Request* createRequest(int requestID, int accountID, int value, int write)
 {
     struct Request* request = (struct Request*) malloc(sizeof(struct Request));
+    request->requestID = requestID;
     request->accountID = accountID;
     request->value = value; 
     request->write = write;

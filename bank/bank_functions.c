@@ -19,8 +19,7 @@ int transaction(int accountID, int value, int totalAccounts)
   }// end if there was an error in validation
   
   if(newBalance < 0){
-    printf("Failed to make transaction, account balance would fall below zero for account ID: %d\n", accountID);
-    return -1;
+    return -2;
   }// end if the new balance is below zero 
 
   write_account(accountID, newBalance);
@@ -30,12 +29,10 @@ int transaction(int accountID, int value, int totalAccounts)
 int validation(int accountID, int totalAccounts)
 {
   if(accountID <= 0){
-    printf("Account ID must be a positive nonzero integer. %d\n", accountID);
     return -1;
   }// end if accountID is invalid
 
   if(accountID > totalAccounts){
-    printf("There are currently only %d accounts. Account ID must be equal to or less than %d.\n", totalAccounts, totalAccounts);
     return -1;
   }// end if accountID > accounts
 

@@ -5,6 +5,7 @@
 struct Request
 {
   int accountID;
+  int requestID;
   int value;
   int write;
 };
@@ -18,7 +19,7 @@ struct Queue
 };
 
 // function to create a new request to be serviced by worker thread
-struct Request* createRequest(int accountID, int value, int write);
+struct Request* createRequest(int requestID, int accountID, int value, int write);
 
 // function to create a queue of given capacity. 
 // It initializes size of queue as 0

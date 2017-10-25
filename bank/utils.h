@@ -17,5 +17,7 @@ char *read_line(void);
 char **split_line(char *line);
 int strcicmp(char const *a, char const *b);
 int num_arguments(char *linep);
+int all_threads_done(int *threads_done, int num_threads);
+void wait_for_workers(int *threads_done, int num_threads);
 
 #endif

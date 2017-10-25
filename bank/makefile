@@ -1,4 +1,4 @@
-CC=gcc -lpthread
+CC=gcc -pthread
 CFLAGS=-Wall 
 
 all: appserver
