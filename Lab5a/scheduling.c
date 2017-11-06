@@ -11,6 +11,7 @@
 
 #define NUM_PROCESSES 20
 
+int total = 0;
 struct process
 {
   /* Values initialized for each process */
@@ -23,13 +24,19 @@ struct process
   int endtime;
   int flag;
   int remainingtime;
+  int started;
+  int finished;
 } process;
 
 /* Forward declarations of Scheduling algorithms */
 void first_come_first_served(struct process *proc);
 void shortest_remaining_time(struct process *proc);
-void round_robin(struct process *proc);
+int round_robin(struct process *proc, int priority, int startTime);
 void round_robin_priority(struct process *proc);
+
+/* Forward declarations of other functions */
+int getMin(struct process *proc, int runtime);
+int getNumProcs(struct process *proc, int priority);
 
 int main()
 {
@@ -51,6 +58,8 @@ int main()
     proc[i].endtime = 0;
     proc[i].flag = 0;
     proc[i].remainingtime = 0;
+    proc[i].started = 0;
+    proc[i].finished = 0;
   }// end for loop over num_processes
 
   /* Show process values */
@@ -70,7 +79,7 @@ int main()
 
   printf("\n\nRound Robin\n");
   memcpy(proc_copy, proc, NUM_PROCESSES * sizeof(struct process));
-  round_robin(proc_copy);
+  round_robin(proc_copy, -1, 1);
 
   printf("\n\nRound Robin with priority\n");
   memcpy(proc_copy, proc, NUM_PROCESSES * sizeof(struct process));
@@ -81,48 +90,34 @@ int main()
 
 void first_come_first_served(struct process *proc)
 {
-  int i, minIndex;
+  int minIndex;
   int count = 0;
   int time = 0;
   int total_difference = 0;
-  struct process;
+  struct process *process;
 
   while(count != NUM_PROCESSES)
   {
-    for(i = 0; i < NUM_PROCESSES; i++)
-    {
-      if(!proc[i].flag){
-        minIndex = i;
-      }// end if process not flagged
-    }// end for loop picking 1st unflagged process
+    minIndex = getMin(proc, 0);
+    process = &(proc[minIndex]);
 
-    for(i = NUM_PROCESSES-1; i >= 0; i--)
-    {
-      if(!proc[i].flag && proc[i].arrivaltime <= proc[minIndex].arrivaltime){
-        minIndex = i;
-      }// end if this is the next minimum process
-
-    }// end for loop over num_processes
-
-    process = proc[minIndex];
-
-    if(time >= process.arrivaltime){
-      process.starttime = time;
+    if(time >= process->arrivaltime){
+      process->starttime = time;
     }else{
-      process.starttime = process.arrivaltime;
+      process->starttime = process->arrivaltime;
     }// end if running time is greater than arrival time
 
     // set the endtime, keep track of arrival to finish
-    process.endtime = process.starttime + process.runtime;
-    total_difference += process.endtime - process.arrivaltime;
+    process->endtime = process->starttime + process->runtime;
+    total_difference += process->endtime - process->arrivaltime;
     
     // set the current time to be the endtime of this process
-    time = process.endtime;
+    time = process->endtime;
     proc[minIndex].flag = 1;
 
     // output the results
-    printf("Process %d started at time %d\n", minIndex, process.starttime);
-    printf("Process %d finished at time %d\n", minIndex, process.endtime);
+    printf("Process %d started at time %d\n", minIndex, process->starttime);
+    printf("Process %d finished at time %d\n", minIndex, process->endtime);
     count++;
   }// end while loop printing out process information
 
@@ -131,98 +126,155 @@ void first_come_first_served(struct process *proc)
 
 void shortest_remaining_time(struct process *proc)
 {
-  int i, minIndex;
+  int minIndex;
   int count = 0;
   int time = 0;
   int total_difference = 0;
-  struct process;
+  struct process *process;
 
   while(count != NUM_PROCESSES)
   {
-    for(i = 0; i < NUM_PROCESSES; i++)
-    {
-      if(!proc[i].flag){
-        minIndex = i;
-      }// end if process not flagged
-    }// end for loop picking 1st unflagged process
+    minIndex = getMin(proc, 1);
+    process = &(proc[minIndex]);
 
-    for(i = NUM_PROCESSES-1; i >= 0; i--)
-    {
-      if(!proc[i].flag && proc[i].runtime <= proc[minIndex].runtime){
-        minIndex = i;
-      }// end if this is the next minimum process
-    }// end for loop over num_processes
-
-    process = proc[minIndex];
-
-    if(time >= process.arrivaltime){
-      process.starttime = time;
+    if(time >= process->arrivaltime){
+      process->starttime = time;
     }else{
-      process.starttime = process.arrivaltime;
+      process->starttime = process->arrivaltime;
     }// end if running time is greater than arrival time
 
     // set the endtime, keep track of arrival to finish
-    process.endtime = process.starttime + process.runtime;
-    total_difference += process.endtime - process.arrivaltime;
+    process->endtime = process->starttime + process->runtime;
+    total_difference += process->endtime - process->arrivaltime;
 
     // set the current time to be the endtime of this process
-    time = process.endtime;
+    time = process->endtime;
     proc[minIndex].flag = 1;
 
     // output the results
-    printf("Process %d started at time %d\n", minIndex, process.starttime);
-    printf("Process %d finished at time %d\n", minIndex, process.endtime);
+    printf("Process %d started at time %d\n", minIndex, process->starttime);
+    printf("Process %d finished at time %d\n", minIndex, process->endtime);
     count++;
   }// end while loop printing out process information
 
   printf("Average time from arrival to finish is %d seconds\n", total_difference / NUM_PROCESSES);
 }// end function shortest_remaining_time
 
-void round_robin(struct process *proc)
+int round_robin(struct process *proc, int priority, int startTime)
 {
+  int i;
+  int total_difference = 0;
   int count = 0;
-  int time = 0;
-  int quantum = 1;
-  struct process;
+  int time = startTime;
+  int quantum = 10;
+  int num_procs_with_priority;
+  struct process *process;
   
-  while(count != NUM_PROCESSES)
+  if(priority == -1){
+    num_procs_with_priority = NUM_PROCESSES;
+  }else{
+    num_procs_with_priority = getNumProcs(proc, priority);
+  }// end if priority == -1
+  
+  while(count != num_procs_with_priority)
   {
-    process = proc[count];
-    process.remainingtime = process.runtime;
-
-    if(time >= process.arrivaltime){
-      process.starttime = time;
-    }else{
-      process.starttime = process.arrivaltime;
-    }// end if running time is greater than arrival time
-
-    if(!process.flag){
-      printf("Process %d started at time %d\n", count, process.starttime);
-      process.flag = 1;
-    }else{
+    for(i = 0; i < NUM_PROCESSES; i++)
+    {
+      process = &(proc[i]);
+ 
+      if(process->finished || time < process->arrivaltime || (priority != -1 && process->priority != priority)){
+        // process has not arrived, or it's done, keep going
+        if(priority != -1){
+          time ++;
+        }// end if priority != -1
+        continue;
+      }// end if the process hasn't arrived yet
       
-    }
+      if(!process->started){
+        // process is being started
+        printf("Process %d started at time %d\n", i, time);
+        process->remainingtime = process->runtime - quantum;
+        process->started = 1;
+      }else{
+        // process is currently running
+        process->remainingtime -= quantum;
+      }// end if the process is flagged
+      
+      // increment the time counter
+      time += quantum;
 
-    process.endtime = process.starttime + quantum;
-    process.remainingtime = process.runtime - quantum;
+      if(process->remainingtime <= 0){
+        time += process->remainingtime;
+        printf("Process %d finished at time %d\n", i, time);
+        total_difference += time - process->arrivaltime;
+        process->finished = 1;
+        count++;
+      }// end if process is done running
+      
+      if(count == NUM_PROCESSES){
+        break;
+      }// end if we've reached the end
 
-    if(process.remainingtime <= 0){
-      printf("Process %d finished at time %d\n", count, process.endtime);
-      count++;
-    }
+    }// end for loop over process order
 
-    
-    
-    time = process.endtime;
-    
-    count++;
   }// end while loop printing out process information
 
-  printf("Average time from arrival to finish is %d seconds\n", time / NUM_PROCESSES);
+  if(priority == -1){
+    printf("Average time from arrival to finish is %d seconds\n", total_difference / NUM_PROCESSES);
+  }// end if priority == -1
+
+  total += total_difference;
+
+  if(priority == 0){
+    printf("Average time from arrival to finish is %d seconds\n", total / NUM_PROCESSES);
+  }// end if priority == 0
+  return time;
 }// end function round_robin
 
 void round_robin_priority(struct process *proc)
 {
-  /* Implement scheduling algorithm here */
+  int time;
+  // run the round robin with all three priorities
+  time = round_robin(proc, 2, 1);
+  time = round_robin(proc, 1, time);
+  round_robin(proc, 0, time);
 }// end function round_robin_priority
 
+int getMin(struct process *proc, int runtime)
+{
+  int minIndex, i;
+  for(i = 0; i < NUM_PROCESSES; i++)
+  {
+    if(!proc[i].flag){
+      minIndex = i;
+      break;
+    }// end if process not flagged
+  }// end for loop picking 1st unflagged process
+
+  for(i = NUM_PROCESSES-1; i >= 0; i--)
+  {
+    if(!proc[i].flag)
+    {
+      if(runtime && proc[i].runtime <= proc[minIndex].runtime){
+        minIndex = i;
+      }else if(proc[i].arrivaltime <= proc[minIndex].arrivaltime){
+        minIndex = i;
+      }// end if getting the minimum runtime
+    }// end if the process is not flagged
+  }// end for loop over num_processes
+
+  return minIndex;
+}// end function getMin()
+
+int getNumProcs(struct process *proc, int priority)
+{
+  int count = 0;
+  int i;
+
+  for(i = 0; i < NUM_PROCESSES; i++){
+    if(proc[i].priority == priority){
+      count++;
+    }// end if the two priorities match
+  }// end for loop over processes
+  return count;
+}// end function getNumProces
