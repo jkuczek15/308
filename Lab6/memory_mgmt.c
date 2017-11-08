@@ -34,7 +34,8 @@ typedef struct {
   int page_faults_CUST_lr;
 } PageFaultTotal;
 
-  
+/* Forward declaration */
+int get_reference_distance(const PageFrame * PageFrames, int num_frames, const int * PageAccesses, int num_accesses, int current_access, int page_frame);
 
 /* Function pointer to the handler for the page replacement algorithm */
 typedef int (* PRAlgoType) (const PageFrame * PageFrames, int num_frames, const int * PageAccesses, int num_accesses, int current_access);
@@ -92,8 +93,7 @@ int * build_sequential_access_seq(int * PageAccesses, int num_accesses)
 /* LR_workload page access */
 int * build_lr_workload_access_seq(int * PageAccesses, int num_accesses)
 {
-  int i;  
-  time_t t;  
+  int i; 
   
   srand(seed); 
   
@@ -213,7 +213,7 @@ int main ()
   	PageFaultTotals.page_faults_OPT_rand += handle_page_accesses(PageFrames,NUM_FRAMES,PageAccesses,NUM_ACCESSES,PRAlgo_OPT);
 	
 	initialize_page_frames(PageFrames,NUM_FRAMES);
-	//PageFaultTotals.page_faults_CUST_rand += handle_page_accesses(PageFrames, NUM_FRAMES,PageAccesses,NUM_ACCESSES,PRAlgo_CUST); 
+    PageFaultTotals.page_faults_CUST_rand += handle_page_accesses(PageFrames, NUM_FRAMES,PageAccesses,NUM_ACCESSES,PRAlgo_CUST); 
   	/* Memory access analysis with sequential access */
   	initialize_page_frames(PageFrames,NUM_FRAMES);
   	build_sequential_access_seq(PageAccesses,NUM_ACCESSES); 
@@ -226,7 +226,7 @@ int main ()
   	PageFaultTotals.page_faults_OPT_seq += handle_page_accesses(PageFrames,NUM_FRAMES,PageAccesses,NUM_ACCESSES,PRAlgo_OPT);
 	
 	initialize_page_frames(PageFrames,NUM_FRAMES);
-	//PageFaultTotals.page_faults_CUST_seq += handle_page_accesses(PageFrames, NUM_FRAMES,PageAccesses,NUM_ACCESSES,PRAlgo_CUST);
+	  PageFaultTotals.page_faults_CUST_seq += handle_page_accesses(PageFrames, NUM_FRAMES,PageAccesses,NUM_ACCESSES,PRAlgo_CUST);
   
   	/* Memory access analysis with LR workload access */
   	initialize_page_frames(PageFrames,NUM_FRAMES);
@@ -240,7 +240,7 @@ int main ()
   	PageFaultTotals.page_faults_OPT_lr += handle_page_accesses(PageFrames,NUM_FRAMES,PageAccesses,NUM_ACCESSES,PRAlgo_OPT);
 	
 	initialize_page_frames(PageFrames,NUM_FRAMES);
-	//PageFaultTotals.page_faults_CUST_lr += handle_page_accesses(PageFrames, NUM_FRAMES,PageAccesses,NUM_ACCESSES,PRAlgo_CUST);
+	  PageFaultTotals.page_faults_CUST_lr += handle_page_accesses(PageFrames, NUM_FRAMES,PageAccesses,NUM_ACCESSES,PRAlgo_CUST);
 		
 	seed++;		// Increment seed to generate new sequence of accesses next iteration
   }
@@ -248,17 +248,17 @@ int main ()
   printf("The average number of page faults for FIFO with Random Access is %d.\n",PageFaultTotals.page_faults_FIFO_rand / NUM_RUNS);
   printf("The average number of page faults for LRU with Random Access is %d.\n",PageFaultTotals.page_faults_LRU_rand / NUM_RUNS);
   printf("The average number of page faults for OPT with Random Access is %d.\n",PageFaultTotals.page_faults_OPT_rand / NUM_RUNS);
-  //printf("The average number of page faults for CUST with Random Access is %d.\n",PageFaultTotals.page_faults_CUST_rand / NUM_RUNS);
+  printf("The average number of page faults for CUST with Random Access is %d.\n",PageFaultTotals.page_faults_CUST_rand / NUM_RUNS);
   	
   printf("The average number of page faults for FIFO with Sequential Access is %d.\n",PageFaultTotals.page_faults_FIFO_seq / NUM_RUNS);
   printf("The average number of page faults for LRU with Sequential Access is %d.\n",PageFaultTotals.page_faults_LRU_seq / NUM_RUNS);
   printf("The average number of page faults for OPT with Sequential Access is %d.\n",PageFaultTotals.page_faults_OPT_seq / NUM_RUNS);
-  //printf("The average number of page faults for CUST with Sequential Access is %d.\n",PageFaultTotals.page_faults_CUST_seq / NUM_RUNS);
+  printf("The average number of page faults for CUST with Sequential Access is %d.\n",PageFaultTotals.page_faults_CUST_seq / NUM_RUNS);
   	
   printf("The average number of page faults for FIFO with LR Workload Access is %d.\n",PageFaultTotals.page_faults_FIFO_lr / NUM_RUNS);
   printf("The average number of page faults for LRU with LR Workload Access is %d.\n",PageFaultTotals.page_faults_LRU_lr / NUM_RUNS);
   printf("The average number of page faults for OPT with LR Workload Access is %d.\n",PageFaultTotals.page_faults_OPT_lr / NUM_RUNS);
-  //printf("The average number of page faults for CUST with LR Workload Access is %d.\n",PageFaultTotals.page_faults_CUST_lr / NUM_RUNS);
+  printf("The average number of page faults for CUST with LR Workload Access is %d.\n",PageFaultTotals.page_faults_CUST_lr / NUM_RUNS);
 
   return 0;
 }
@@ -285,11 +285,11 @@ int PRAlgo_FIFO(const PageFrame * PageFrames, int num_frames, const int * PageAc
     {
       least_time_of_arrival = PageFrames[i].time_of_arrival;
       index_with_least_arrival_time = i;
-    }
-  }
+    }// end if we have a smaller arrival time
+  }// end for loop over number of frames
   
   return index_with_least_arrival_time; 
-}
+}// end function FIFO
 
 /*
  * Memory allocation on the basis of furthest page to be used
@@ -303,34 +303,24 @@ int PRAlgo_FIFO(const PageFrame * PageFrames, int num_frames, const int * PageAc
  */
 int PRAlgo_OPT(const PageFrame * PageFrames, int num_frames, const int * PageAccesses, int num_accesses, int current_access)
 {
-  int i, j, furthest_referenced;
-  int furthest_referenced_distance = 0;
-  int max_furthest_referenced_distance = 0;  
+  int i;
+  // the reference distance for the 1st page frame
+  int reference_distance = get_reference_distance(PageFrames, num_frames, PageAccesses, num_accesses, current_access, 0);
+  int max_reference_distance = reference_distance;
+  int furthest_reference_frame = 0;
 
-  for(i = 0; i < num_frames; i++)
+  for(i = 1; i < num_frames; i++)
   {
-    for(j = current_access-1; j >= current_access - num_frames; j--)
-    {
-	// go through most recent page accesses to find the page frame
-	if(j == -1){
-	  j = num_accesses-1;
-	}// end if we are out of bounds
-
-	if(PageFrames[i].page_id == PageAccesses[j]){
-	  break;
-	}// end if we found where this page is accessed
-
-	furthest_referenced_distance++;	
-    }// end for loop over all page accesses
+    reference_distance = get_reference_distance(PageFrames, num_frames, PageAccesses, num_accesses, current_access, i);
     
-    if(furthest_referenced_distance > max_furthest_referenced_distance){
-	max_furthest_referenced_distance = furthest_referenced_distance;
-	furthest_referenced = PageFrames[i].page_id;
+    if(reference_distance >= max_reference_distance){
+      max_reference_distance = reference_distance;
+      furthest_reference_frame = i;
     }// end if we have a new page to replace that's far in the future
 
   }// end for loop over num page frames
   
-  return furthest_referenced; 
+  return furthest_reference_frame; 
 }// end function PRAlgo_OPT
 
 /*
@@ -357,11 +347,11 @@ int PRAlgo_LRU(const PageFrame * PageFrames, int num_frames, const int * PageAcc
     }// end if we have a new earliest time of access
   }// end for loop over number of page frames
   
-  return index_with_least_access_time; 
+  return index_with_least_access_time;
 }// end function PRalgo_LRU
 
 /*
- * Memory allocation on the basis of Time of Arrival
+ * Memory allocation using custom algorithm
  * PageFrames = The current table
  * num_frames = how many frames in you table
  * PageAccesses = id of pages in the order of the access, index is the time of access i.e., PageAccesses[i]=is the id of the page accessed at time i
@@ -371,11 +361,27 @@ int PRAlgo_LRU(const PageFrame * PageFrames, int num_frames, const int * PageAcc
  */
 int PRAlgo_CUST(const PageFrame * PageFrames, int num_frames, const int * PageAccesses, int num_accesses, int current_access)
 {
-   
-  if((rand() % 10) != 5){
-    return PRAlgo_LRU(PageFrames, num_frames, PageAccesses, num_accesses, current_access);     
-  }else{
-    return PRAlgo_OPT(PageFrames, num_frames, PageAccesses, num_accesses, current_access); 
-  }// end if random value not equal to 5
-
+  // optimal algorithm beats the LRU algorithm
+  return PRAlgo_OPT(PageFrames, num_frames, PageAccesses, num_accesses, current_access); 
 }// end function PRAlgo_CUST
+
+int get_reference_distance(const PageFrame * PageFrames, int num_frames, const int * PageAccesses, int num_accesses, int current_access, int page_frame)
+{
+  int reference_distance = 1;
+  int j;
+
+  for(j = current_access-1; j >= current_access-num_frames; j--)
+  {
+    // go through most recent page accesses to find the page frame
+    if(j < 0){
+      j = num_accesses-1;
+    }// end if we are out of bounds
+
+    if(PageFrames[page_frame].page_id == PageAccesses[j]){
+      break;
+    }// end if we found where this page is accessed
+
+    reference_distance++;	
+  }// end for loop over all page accesses
+  return reference_distance;
+}// end function get_reference_distance
