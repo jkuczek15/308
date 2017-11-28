@@ -84,7 +84,7 @@ void decodeBootSector(struct BootSector * pBootS, unsigned char buffer[])
 {
 	int i; 	
 
-	// Pull the name and put it in the struct (remember to null-terminate)
+	// Pull the name and put it in the struct
 	for(i = 3; i < 11; i++){
 	  pBootS->sName[i-3] = buffer[i];
 	}// end for loop pulling in name
