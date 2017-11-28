@@ -4,6 +4,7 @@
  */
  
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -61,7 +62,7 @@ int main(int argc, char * argv[])
 	// Open the file and read the boot sector
 	pBootSector = open(argv[1], O_RDONLY);
 	read(pBootSector, buffer, SIZE);
-        close(pBootSector);
+	close(pBootSector);
     
 	// Decode the boot Sector
 	decodeBootSector(&sector, buffer);
@@ -69,7 +70,7 @@ int main(int argc, char * argv[])
 	// Print Boot Sector information
 	printBootSector(&sector);
     
-    	return 0;
+	return 0;
 }// end main()
 
 // Converts two characters to an unsigned short with two, one
@@ -100,14 +101,14 @@ void decodeBootSector(struct BootSector * pBootS, unsigned char buffer[])
 	pBootS->iNumberFATs = buffer[16]; 
 	
 	// Read root entries, logicical sectors and medium descriptor
-    	pBootS->iRootEntries = endianSwap(buffer[17], buffer[18]);
-    	pBootS->iLogicalSectors = endianSwap(buffer[19], buffer[20]);
-    	pBootS->xMediumDescriptor = buffer[21];
+	pBootS->iRootEntries = endianSwap(buffer[17], buffer[18]);
+	pBootS->iLogicalSectors = endianSwap(buffer[19], buffer[20]);
+	pBootS->xMediumDescriptor = buffer[21];
 	
 	// Read and covert sectors/fat, sectors/track, and number of heads
 	pBootS->iSectorsFAT = endianSwap(buffer[22], buffer[23]);
-    	pBootS->iSectorsTrack = endianSwap(buffer[24], buffer[25]);
-    	pBootS->iHeads = endianSwap(buffer[26], buffer[27]);
+	pBootS->iSectorsTrack = endianSwap(buffer[24], buffer[25]);
+	pBootS->iHeads = endianSwap(buffer[26], buffer[27]);
 	
 	// Read hidden sectors
 	pBootS->iHiddenSectors = endianSwap(buffer[28], buffer[29]);
